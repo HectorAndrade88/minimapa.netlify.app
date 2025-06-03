@@ -1,106 +1,98 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-    <meta charset="UTF-8">
-    <title>Landing Page: Cámara y Geolocalización</title>
-    <style>
-        body {
-            margin: 0;
-            background: #000;
-            color: #fff;
-            font-family: Arial, sans-serif;
-            overflow: hidden;
-        }
-
-        video {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        #minimap {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            width: 200px;
-            height: 200px;
-            border: 3px solid #fff;
-            border-radius: 10px;
-            box-shadow: 0 0 10px #000;
-        }
-
-        #location-info {
-            position: absolute;
-            bottom: 220px;
-            right: 10px;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 14px;
-            max-width: 300px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Minimapa estilo GTA con Token Manual</title>
+  <style>
+    body { margin: 0; background: #000; color: #fff; font-family: Arial, sans-serif; overflow: hidden; }
+    video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
+    #minimap {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      width: 200px;
+      height: 200px;
+      border: 3px solid #0f0;
+      border-radius: 10px;
+      box-shadow: 0 0 15px #0f0;
+    }
+    #location-info {
+      position: absolute;
+      bottom: 220px;
+      right: 10px;
+      background: rgba(0,0,0,0.5);
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 14px;
+      max-width: 300px;
+    }
+  </style>
 </head>
-
 <body>
 
-    <video id="video" autoplay playsinline muted></video>
-    <img id="minimap" src="" alt="Minimapa">
-    <div id="location-info">Cargando ubicación en tiempo real...</div>
+<video id="video" autoplay playsinline muted></video>
+<img id="minimap" src="" alt="Minimapa">
+<div id="location-info">Cargando ubicación...</div>
 
-    <script>
-        const video = document.getElementById('video');
-        const minimap = document.getElementById('minimap');
-        const locationInfo = document.getElementById('location-info');
+<script>
+  const video = document.getElementById('video');
+  const minimap = document.getElementById('minimap');
+  const locationInfo = document.getElementById('location-info');
 
-        // Iniciar la cámara en vivo
-        async function startCamera() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-                video.srcObject = stream;
-            } catch (e) {
-                alert('Error al acceder a la cámara: ' + e.message);
-            }
-        }
+  // Pedir token al usuario
+  const apiKey = prompt('Ingresa tu API Key de Google Maps:');
+  if (!apiKey) {
+    alert('No se ingresó un token. Cerrando la aplicación.');
+    throw new Error('Token requerido');
+  }
 
-        // Obtener ubicación en tiempo real y actualizar minimapa
-        function startGeolocation() {
-            if ('geolocation' in navigator) {
-                navigator.geolocation.watchPosition(pos => {
-                    const lat = pos.coords.latitude.toFixed(6);
-                    const lon = pos.coords.longitude.toFixed(6);
-                    const accuracy = pos.coords.accuracy;
+  // Iniciar la cámara
+  async function startCamera() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      video.srcObject = stream;
+    } catch (e) {
+      alert('Error al acceder a la cámara: ' + e.message);
+    }
+  }
 
-                    // Actualiza el texto con los datos
-                    locationInfo.textContent = `📍 Latitud: ${lat}\n📍 Longitud: ${lon}\n🎯 Precisión: ${accuracy} m`;
+  // Geolocalización y minimapa
+  function startGeolocation() {
+    if ('geolocation' in navigator) {
+      navigator.geolocation.watchPosition(pos => {
+        const lat = pos.coords.latitude.toFixed(6);
+        const lon = pos.coords.longitude.toFixed(6);
+        const accuracy = pos.coords.accuracy;
 
-                    // Actualiza el minimapa con Google Maps Static API
-                    const zoom = 15;
-                    const apiKey = '[apikey]'; // ¡PON AQUÍ TU API KEY!
-                    const url = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lon}&zoom=${zoom}&size=200x200&markers=color:red|${lat},${lon}&key=${apiKey}`;
-                    minimap.src = url;
+        locationInfo.textContent = `📍 Latitud: ${lat}\n📍 Longitud: ${lon}\n🎯 Precisión: ${accuracy} m`;
 
-                }, err => {
-                    console.error('Error al obtener la ubicación:', err);
-                    locationInfo.textContent = 'Error al obtener la ubicación.';
-                }, {
-                    enableHighAccuracy: true,
-                    maximumAge: 0
-                });
-            } else {
-                locationInfo.textContent = 'Geolocalización no soportada por el navegador.';
-            }
-        }
+        const zoom = 15;
+        const style = encodeURIComponent(JSON.stringify([
+          { "featureType": "all", "elementType": "geometry", "stylers": [{ "color": "#1c1c1c" }] },
+          { "featureType": "all", "elementType": "labels.text.fill", "stylers": [{ "color": "#ffffff" }] },
+          { "featureType": "all", "elementType": "labels.text.stroke", "stylers": [{ "color": "#000000" }, { "weight": 2 }] },
+          { "featureType": "poi", "elementType": "geometry", "stylers": [{ "color": "#2e2e2e" }] },
+          { "featureType": "road", "elementType": "geometry", "stylers": [{ "color": "#444444" }] },
+          { "featureType": "water", "elementType": "geometry", "stylers": [{ "color": "#005577" }] }
+        ]));
 
-        // Iniciar
-        startCamera();
-        startGeolocation();
-    </script>
+        const url = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lon}&zoom=${zoom}&size=200x200&maptype=roadmap&markers=color:green|${lat},${lon}&style=${style}&key=${apiKey}`;
+        minimap.src = url;
+      }, err => {
+        console.error('Error geolocalización:', err);
+        locationInfo.textContent = 'Error al obtener la ubicación.';
+      }, {
+        enableHighAccuracy: true,
+        maximumAge: 0
+      });
+    } else {
+      locationInfo.textContent = 'Geolocalización no soportada.';
+    }
+  }
+
+  startCamera();
+  startGeolocation();
+</script>
 
 </body>
-
 </html>

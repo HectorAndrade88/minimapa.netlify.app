@@ -104,9 +104,9 @@
   function startGeolocation() {
     if ('geolocation' in navigator) {
       navigator.geolocation.watchPosition(pos => {
-        const lat = pos.coords.latitude.toFixed(6);
-        const lon = pos.coords.longitude.toFixed(6);
-        const accuracy = pos.coords.accuracy;
+        const lat = pos.coords.latitude.toFixed(2);
+        const lon = pos.coords.longitude.toFixed(2);
+        const accuracy = pos.coords.accuracy.toFixed(2);
 
         locationInfo.textContent = `📍 Latitud: ${lat}\n📍 Longitud: ${lon}\n🎯 Precisión: ${accuracy} m`;
 
